@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Rack Data Dashboard</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    /* Base reset & fonts */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    /* Header (white background, logo on the left) */
+    header {
+      background: #fff;
+      padding: 20px 40px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 20px;
+    }
+    header img {
+      max-height: 60px;
+    }
+    header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2rem;
+      color: #004225;
+      margin: 0;
+    }
+
+    /* Main Dashboard (green background) */
+    .dashboard {
+      background: #004225;
+      color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      margin: 30px auto;
+      max-width: 1200px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dashboard h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.75rem;
+      margin-bottom: 20px;
+      color: #fff;
+      text-align: center;
+    }
+
+    /* Section Container for consistent spacing */
+    .section {
+      margin-bottom: 30px;
+    }
+    .section h3 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.25rem;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #fff;
+    }
+
+    /* Controls (for selecting rack) */
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .controls label {
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+    .controls select {
+      padding: 8px 16px;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #fff;
+      background: #fff;
+      color: #004225;
+      transition: background 0.3s ease;
+    }
+    .controls button {
+      padding: 8px 16px;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: none;
+      background: #fff;
+      color: #004225;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .controls button:hover {
+      background: #f0f0f0;
+    }
+
+    /* Common button style (used in table + rack length confirm) */
+    .btn {
+      padding: 6px 12px;
+      background: #004225;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-size: 0.9rem;
+    }
+    .btn:hover {
+      background: #00331a;
+    }
+
+    /* Tables (with vertical column separators) */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto;
+      background: #fff;
+      color: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #ccc; /* Outer border */
+    }
+    thead tr {
+      background: #00331a; /* Darker green for header row */
+    }
+    thead th {
+      color: #fff;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      border-right: 1px solid #00331a; /* Vertical line in header */
+    }
+    thead th:last-child {
+      border-right: none; /* Remove last vertical line */
+    }
+    th, td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+      border-right: 1px solid #ddd; /* Vertical column separator */
+    }
+    th:last-child,
+    td:last-child {
+      border-right: none; /* Remove last column separator */
+    }
+    tr:last-child td {
+      border-bottom: none; /* Remove bottom border on last row */
+    }
+    tr:hover td {
+      background: #f1f1f1;
+    }
+
+    /* Editable input fields in table */
+    .editable-input {
+      width: 70px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .editable-input:focus {
+      outline: none;
+      border-color: #004225;
+    }
+
+    /* Rack Length Editor as a table with a dark green header */
+    .rack-length-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto;
+      background: #fff;
+      color: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #ccc;
+    }
+    .rack-length-table thead tr {
+      background: #00331a;
+    }
+    .rack-length-table thead th {
+      color: #fff;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      border-right: 1px solid #00331a;
+      text-align: center;
+    }
+    .rack-length-table thead th:last-child {
+      border-right: none;
+    }
+    .rack-length-table th, .rack-length-table td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+    }
+    .rack-length-table th:last-child,
+    .rack-length-table td:last-child {
+      border-right: none;
+    }
+    .rack-length-table tr:last-child td {
+      border-bottom: none;
+    }
+    .rack-length-table td input {
+      width: 100px;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      margin-right: 10px;
+    }
+    .rack-length-table td input:focus {
+      border-color: #004225;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header with Logo on the Left -->
+  <header>
+    <img src="logo.png" alt="Bentley Logo">
+    <h1>Bentley Motors</h1>
+  </header>
+
+  <!-- Main Dashboard (Green background) -->
+  <div class="dashboard">
+    <h2>Rack Data Dashboard</h2>
+
+    <!-- Rack Selection Controls -->
+    <div class="controls">
+      <label for="rackSelect">Select Rack ID:</label>
+      <select id="rackSelect">
+        <option value="1110001">1110001</option>
+        <option value="1110002">1110002</option>
+      </select>
+      <button id="loadData">Load Data</button>
+    </div>
+
+    <!-- Received Data Section -->
+    <div class="section">
+      <h3>Received Data</h3>
+      <table id="receivedTable">
+        <thead>
+          <tr>
+            <th>Sensor ID</th>
+            <th>Auto Mode</th>
+            <th>Used Box Size</th>
+            <th>Box Count</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Stored Data Section -->
+    <div class="section">
+      <h3>Stored Data</h3>
+      <table id="storedTable">
+        <thead>
+          <tr>
+            <th>Sensor ID</th>
+            <th>Box Size</th>
+            <th>Confirmation</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Rack Length Table -->
+    <div class="section">
+      <h3>Edit Rack Length</h3>
+      <table class="rack-length-table">
+        <thead>
+          <tr>
+            <th colspan="2">Rack Length Editor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: right; font-weight: bold;">Rack Length:</td>
+            <td>
+              <input type="text" id="rackLengthInput" />
+              <button class="btn" id="confirmRackLength">Confirm</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration (using your provided config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHJoBc4yZqGIWcaW-cqwBYh_9IWW9f3Bc",
+      authDomain: "logistics-parts-tracking.firebaseapp.com",
+      databaseURL: "https://logistics-parts-tracking-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "logistics-parts-tracking",
+      storageBucket: "logistics-parts-tracking.firebasestorage.app",
+      messagingSenderId: "160509055364",
+      appId: "1:160509055364:web:28849f90fdd3d2420d8dd1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let receivedListener = null;
+    let storedListener = null;
+
+    // Subscribe to realtime updates for Received Data
+    function subscribeToReceivedData(rackId) {
+      if (receivedListener) {
+        receivedListener.off();
+      }
+      const receivedRef = database.ref('ReceivedData/' + rackId);
+      receivedListener = receivedRef;
+      receivedRef.on('value', function(snapshot) {
+        const tbody = document.getElementById('receivedTable').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = "";
+        snapshot.forEach(function(childSnapshot) {
+          const sensorKey = childSnapshot.key; // e.g., "Sensor_63600001"
+          const sensorData = childSnapshot.val();
+          const derivedSensorID = sensorKey.replace("Sensor_", "");
+          const row = tbody.insertRow();
+          row.insertCell().innerText = derivedSensorID || "N/A";
+          row.insertCell().innerText = sensorData.autoMode ? "Yes" : "No";
+          row.insertCell().innerText = sensorData.autoBoxSize || "N/A";
+          row.insertCell().innerText = sensorData.boxCount || "N/A";
+        });
+      });
+    }
+
+    // Subscribe to realtime updates for Stored Data (editable)
+    function subscribeToStoredData(rackId) {
+      if (storedListener) {
+        storedListener.off();
+      }
+      const storedRef = database.ref('StoredData/' + rackId);
+      storedListener = storedRef;
+      storedRef.on('value', function(snapshot) {
+        const data = snapshot.val();
+        const storedTbody = document.getElementById('storedTable').getElementsByTagName('tbody')[0];
+        storedTbody.innerHTML = "";
+
+        // Set rack length in the editable field from /StoredData/<rackId>/rackLength
+        const rackLengthInput = document.getElementById('rackLengthInput');
+        if (data && data.rackLength) {
+          rackLengthInput.value = data.rackLength;
+        } else {
+          rackLengthInput.value = "";
+        }
+
+        // Build rows for each sensor from /StoredData/<rackId>/sensors
+        if (data && data.sensors) {
+          Object.keys(data.sensors).forEach(function(sensorKey) {
+            const sensor = data.sensors[sensorKey];
+            const row = storedTbody.insertRow();
+            row.insertCell().innerText = sensorKey;
+            const boxSizeCell = row.insertCell();
+            const input = document.createElement('input');
+            input.type = "text";
+            input.value = sensor.boxSize;
+            input.className = "editable-input";
+            boxSizeCell.appendChild(input);
+            const actionCell = row.insertCell();
+            const confirmBtn = document.createElement('button');
+            confirmBtn.innerText = "Confirm";
+            confirmBtn.className = "btn";
+            confirmBtn.onclick = function() {
+              if (confirm("Are you sure you want to update the box size for sensor " + sensorKey + " to " + input.value + "?")) {
+                updateSensorBoxSize(rackId, sensorKey, input.value);
+              }
+            };
+            actionCell.appendChild(confirmBtn);
+          });
+        }
+      });
+    }
+
+    // Function to update sensor boxSize in Firebase
+    function updateSensorBoxSize(rackId, sensorKey, newBoxSize) {
+      const sensorRef = database.ref('StoredData/' + rackId + '/sensors/' + sensorKey);
+      sensorRef.update({ boxSize: newBoxSize })
+        .then(() => { alert("Sensor " + sensorKey + " updated successfully."); })
+        .catch((error) => { alert("Error updating sensor " + sensorKey + ": " + error.message); });
+    }
+
+    // Function to update global rackLength in Firebase
+    document.getElementById('confirmRackLength').addEventListener('click', function() {
+      const rackId = document.getElementById('rackSelect').value;
+      const newRackLength = parseInt(document.getElementById('rackLengthInput').value, 10);
+      if (isNaN(newRackLength)) {
+        alert("Please enter a valid number for rack length.");
+        return;
+      }
+      if (confirm("Are you sure you want to update the rack length to " + newRackLength + "?")) {
+        const rackRef = database.ref('StoredData/' + rackId);
+        rackRef.update({ rackLength: newRackLength })
+          .then(() => { alert("Rack length updated successfully."); })
+          .catch((error) => { alert("Error updating rack length: " + error.message); });
+      }
+    });
+
+    // Manual "Load Data" button
+    document.getElementById('loadData').addEventListener('click', function() {
+      const rackId = document.getElementById('rackSelect').value;
+      subscribeToReceivedData(rackId);
+      subscribeToStoredData(rackId);
+    });
+
+    // Initially subscribe using the default rack
+    subscribeToReceivedData(document.getElementById('rackSelect').value);
+    subscribeToStoredData(document.getElementById('rackSelect').value);
+  </script>
+</body>
+</html>
