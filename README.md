@@ -1,6 +1,6 @@
 # Part Tracking Front-End Website Code
 
-##Accessble at: [Part Tracking Web App](https://logistics-parts-tracking.web.app/)
+## Accessble here: [Part Tracking Web App](https://logistics-parts-tracking.web.app/)
 
 Owner: **Kaveesha Abeysundara** (SID: 201578163)    
 
