@@ -27,7 +27,7 @@ Static web dashboard for real-time flow rack part tracking, using Firebase Realt
 
 ## About
 
-This repository hosts a single-page dashboard (`index.html`) and accompanying logo (`logo.png`). The dashboard connects to a Firebase Realtime Database to display live part counts, sensor statuses, and rack configurations for Bentley Motors’ flow rack tracking system.
+This repository hosts a single-page dashboard (`index.html`) and accompanying logo (`logo.png`). The dashboard connects to a Firebase Realtime Database to display live part counts, sensor statuses, and rack configurations for the flow rack tracking system.
 
 ## Files
 
